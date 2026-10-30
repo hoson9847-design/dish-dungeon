@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>THE DISH DUNGEON - HẦM NGỤC RỬA BÁT</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:wght@600;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    .font-display {
+      font-family: 'Anton', sans-serif;
+      letter-spacing: 0.04em;
+    }
+    @keyframes shakeOpenLeft {
+      0% { transform: perspective(1000px) rotate(0deg) rotateY(0deg); opacity: 1; }
+      15% { transform: perspective(1000px) rotate(-5deg) rotateY(0deg); }
+      30% { transform: perspective(1000px) rotate(5deg) rotateY(0deg); }
+      45% { transform: perspective(1000px) rotate(-5deg) rotateY(0deg); }
+      60% { transform: perspective(1000px) rotate(4deg) rotateY(0deg); opacity: 1; }
+      100% { transform: perspective(1000px) rotate(0deg) rotateY(-95deg) scale(1.05); opacity: 0; }
+    }
+    @keyframes shakeOpenRight {
+      0% { transform: perspective(1000px) rotate(0deg) rotateY(0deg); opacity: 1; }
+      15% { transform: perspective(1000px) rotate(5deg) rotateY(0deg); }
+      30% { transform: perspective(1000px) rotate(-5deg) rotateY(0deg); }
+      45% { transform: perspective(1000px) rotate(5deg) rotateY(0deg); }
+      60% { transform: perspective(1000px) rotate(-4deg) rotateY(0deg); opacity: 1; }
+      100% { transform: perspective(1000px) rotate(0deg) rotateY(95deg) scale(1.05); opacity: 0; }
+    }
+    .door-left-anim {
+      transform-origin: left center;
+      animation: shakeOpenLeft 0.95s ease-in-out forwards;
+    }
+    .door-right-anim {
+      transform-origin: right center;
+      animation: shakeOpenRight 0.95s ease-in-out forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 max-w-md mx-auto select-none">
+
+  <!-- HEADER -->
+  <header class="text-center py-2 border-b-2 border-slate-800 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">🍽️</span>
+      <h1 class="font-display text-2xl text-amber-400 tracking-wider">DISH DUNGEON</h1>
+    </div>
+    <div id="roomBadge" class="hidden bg-slate-800 border border-slate-700 px-3 py-1 rounded-full text-xs font-bold text-slate-300">
+      PHÒNG: <span id="badgeCode" class="text-amber-400 font-black">-----</span>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 flex flex-col justify-center my-3 relative">
+
+    <!-- SCREEN 1: HOME -->
+    <section id="screenHome" class="space-y-5">
+      <div class="bg-slate-900 border-2 border-slate-800 rounded-2xl p-5 shadow-2xl text-center">
+        <div class="text-5xl mb-2">🧽⚔️🫧</div>
+        <h2 class="font-display text-3xl text-white uppercase mb-1">HẦM NGỤC RỬA BÁT</h2>
+        <p class="text-xs text-slate-400">Ai cạn máu trước sẽ phải đứng dậy đi rửa bát!</p>
+
+        <div class="mt-5 text-left">
+          <label class="text-xs font-bold text-slate-400 uppercase">Tên chiến binh của bạn</label>
+          <input id="inputName" type="text" maxlength="14" placeholder="Nhập tên (VD: Sơn, Nam...)"
+            class="w-full mt-1 p-3.5 rounded-xl bg-slate-800 border-2 border-slate-700 text-white font-bold focus:outline-none focus:border-amber-400" />
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 mt-4">
+          <button onclick="createOnlineRoom()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3.5 rounded-xl text-base uppercase tracking-wide active:scale-95 transition shadow-lg">
+            🔥 Tạo Phòng Mới (Nhiều Điện Thoại)
+          </button>
+
+          <div class="flex gap-2">
+            <input id="inputRoomCode" type="text" maxlength="6" placeholder="NHẬP MÃ PHÒNG"
+              class="flex-1 p-3 rounded-xl bg-slate-800 border-2 border-slate-700 text-center font-black uppercase tracking-widest text-amber-300 focus:outline-none focus:border-amber-400" />
+            <button onclick="joinOnlineRoom()" class="bg-blue-600 hover:bg-blue-500 text-white font-black px-5 rounded-xl uppercase text-sm active:scale-95 transition">
+              VÀO
+            </button>
+          </div>
+        </div>
+
+        <div class="relative flex py-4 items-center">
+          <div class="flex-grow border-t border-slate-800"></div>
+          <span class="flex-shrink mx-3 text-slate-500 text-xs font-bold uppercase">Hoặc</span>
+          <div class="flex-grow border-t border-slate-800"></div>
+        </div>
+
+        <button onclick="startBotMode()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-sm uppercase tracking-wide active:scale-95 transition">
+          🤖 Chơi Thử Ngay Với 3 AI Bot
+        </button>
+      </div>
+      <p id="statusMsg" class="text-center text-xs text-amber-400 font-bold min-h-[18px]"></p>
+    </section>
+
+    <!-- SCREEN 2: LOBBY -->
+    <section id="screenLobby" class="hidden space-y-4">
+      <div class="bg-slate-900 border-2 border-slate-800 rounded-2xl p-5 text-center shadow-2xl">
+        <p class="text-xs font-bold text-slate-400 uppercase">Mã Phòng (Đọc mã này cho bạn bè nhập)</p>
+        <div id="lobbyCodeDisplay" class="font-display text-5xl text-amber-400 tracking-widest my-2 bg-slate-950 py-3 rounded-xl border border-slate-800">-----</div>
+        <p class="text-xs text-slate-400 mb-4">Mỗi người mở link trên điện thoại riêng và nhập mã trên</p>
+
+        <div class="text-left mb-4">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-slate-400 uppercase">Danh sách trong hầm ngục</span>
+            <span id="playerCount" class="text-xs font-black text-amber-400">1 người</span>
+          </div>
+          <ul id="lobbyPlayerList" class="space-y-2 max-h-48 overflow-y-auto"></ul>
+        </div>
+
+        <div id="hostControls" class="space-y-2 hidden">
+          <button onclick="addBotToLobby()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl text-xs uppercase border border-slate-700">
+            + Thêm 1 AI Bot vào phòng
+          </button>
+          <button onclick="hostStartGame()" class="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-lg uppercase tracking-wider active:scale-95 transition shadow-lg">
+            ⚔️ BẮT ĐẦU VÀO HẦM NGỤC
+          </button>
+        </div>
+        <div id="guestWaitText" class="hidden text-sm font-bold text-amber-400 animate-pulse py-3">
+          Đang đợi Chủ Phòng bấm Bắt Đầu...
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: GAMEPLAY -->
+    <section id="screenGame" class="hidden space-y-3">
+      <!-- Top Bar: Round & Timer & Sudden Death -->
+      <div class="flex justify-between items-center bg-slate-900 border border-slate-800 px-3.5 py-2.5 rounded-xl">
+        <div>
+          <span class="text-[11px] text-slate-400 font-bold uppercase block">Vòng đấu</span>
+          <span id="roundText" class="font-display text-xl text-white">VÒNG 1</span>
+        </div>
+        <div id="suddenDeathBadge" class="hidden bg-red-600/20 border border-red-500 text-red-400 px-2.5 py-1 rounded-lg text-[11px] font-black animate-pulse">
+          ⚡ X2 SÁT THƯƠNG
+        </div>
+        <div class="text-right">
+          <span class="text-[11px] text-slate-400 font-bold uppercase block">Đồng hồ</span>
+          <span id="timerText" class="font-mono font-black text-base text-amber-400">00:00</span>
+        </div>
+      </div>
+
+      <!-- Players HP Grid -->
+      <div id="playersStatusGrid" class="grid grid-cols-2 gap-2"></div>
+
+      <!-- Last Round Log -->
+      <div id="eventLogBox" class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 min-h-[68px] flex flex-col justify-center">
+        <p id="eventLogTitle" class="text-xs font-extrabold text-amber-400 uppercase mb-1">Diễn biến hầm ngục:</p>
+        <div id="eventLogContent" class="text-xs text-slate-200 space-y-1">
+          Hãy chọn 1 trong 2 cánh cửa phía dưới để mở!
+        </div>
+      </div>
+
+      <!-- Inventory Item Bar -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
+        <div class="text-xs font-bold text-slate-300">
+          🎒 Túi đồ: <span id="myItemText" class="text-amber-400 font-black">Trống</span>
+        </div>
+        <button id="btnUseItem" onclick="useMyItem()" class="hidden bg-emerald-600 text-white text-xs font-black px-3 py-1.5 rounded-lg uppercase active:scale-95">
+          Dùng Ngay
+        </button>
+      </div>
+
+      <!-- Doors Area -->
+      <div id="doorsContainer" class="pt-1">
+        <p class="text-center text-xs font-bold text-slate-400 uppercase mb-2">Chạm vào cánh cửa bạn muốn bước qua</p>
+        <div class="flex gap-3 h-52">
+          <button id="btnDoorWood" onclick="chooseDoor('WOOD')"
+            class="flex-1 bg-gradient-to-b from-amber-700 to-amber-900 border-4 border-amber-950 rounded-2xl shadow-2xl flex flex-col items-center justify-center p-3 active:scale-95 transition">
+            <span class="text-4xl mb-2">🚪</span>
+            <span class="font-display text-3xl text-amber-100 tracking-wide">CỬA GỖ</span>
+            <span class="text-[10px] font-bold text-amber-300/80 mt-1 uppercase">Ẩn chứa bất ngờ</span>
+          </button>
+
+          <button id="btnDoorIron" onclick="chooseDoor('IRON')"
+            class="flex-1 bg-gradient-to-b from-slate-600 to-slate-800 border-4 border-slate-900 rounded-2xl shadow-2xl flex flex-col items-center justify-center p-3 active:scale-95 transition">
+            <span class="text-4xl mb-2">🛡️</span>
+            <span class="font-display text-3xl text-slate-100 tracking-wide">CỬA SẮT</span>
+            <span class="text-[10px] font-bold text-slate-300/80 mt-1 uppercase">Rủi ro hay cơ hội?</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Waiting Overlay after picking door -->
+      <div id="waitingOverlay" class="hidden py-12 text-center bg-slate-900/80 rounded-2xl border border-slate-800">
+        <div class="text-4xl animate-bounce mb-2">🗝️</div>
+        <p class="font-display text-2xl text-amber-400 uppercase">Đang mở cửa hầm ngục...</p>
+        <p id="waitingCountText" class="text-xs text-slate-400 mt-1">Đợi những người chơi khác lựa chọn</p>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: GAME OVER -->
+    <section id="screenGameOver" class="hidden">
+      <div id="gameOverCard" class="rounded-2xl p-6 text-center border-4 shadow-2xl space-y-4">
+        <div id="loserEmoji" class="text-7xl">🍽️🧽</div>
+        <h2 id="gameOverHeadline" class="font-display text-4xl uppercase leading-tight"></h2>
+        <p id="gameOverSubtext" class="text-sm font-bold"></p>
+
+        <div class="bg-black/30 rounded-xl p-3 text-left">
+          <p class="text-xs font-bold uppercase text-white/80 mb-2">Bảng tổng kết máu (HP):</p>
+          <div id="finalScoreList" class="space-y-1.5 text-xs"></div>
+        </div>
+
+        <button id="btnReplayHost" onclick="hostRestartGame()" class="hidden w-full bg-amber-400 text-slate-950 font-black py-3.5 rounded-xl uppercase text-base shadow-lg active:scale-95">
+          🔄 Chơi Ván Mới
+        </button>
+        <button onclick="location.reload()" class="w-full bg-slate-800/80 text-white font-bold py-2.5 rounded-xl uppercase text-xs">
+          Về Màn Hình Chính
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="text-center text-[11px] text-slate-600 py-1">
+    The Dish Dungeon • Chơi trực tiếp trên trình duyệt di động
+  </footer>
+
+  <script>
+    let peer = null;
+    let isHost = false;
+    let myId = 'player_' + Math.random().toString(36).substr(2, 5);
+    let myName = '';
+    let currentRoomCode = '';
+    let hostConn = null;
+    let clientConns = {};
+    let timerInterval = null;
+
+    let gameState = {
+      status: 'lobby',
+      round: 1,
+      startTime: null,
+      suddenDeath: false,
+      players: {},
+      lastLogs: [],
+      loser: null
+    };
+
+    const EVENTS_POOL = [
+      { text: "Quái vật Chảo Mỡ lao ra táp!", hp: -25, item: null },
+      { text: "Trượt chân vào vũng nước rửa chén!", hp: -15, item: null },
+      { text: "Bị Ma Đũa Mốc gõ trúng đầu!", hp: -20, item: null },
+      { text: "Phòng kho an toàn, không có gì xảy ra.", hp: 0, item: null },
+      { text: "Uống được Nước Chanh Thần Thánh!", hp: +15, item: null },
+      { text: "Nhặt được [Giẻ Thần Kỳ] (+20 HP khi dùng)!", hp: 0, item: "SPONGE" },
+      { text: "Nhặt được [Khiên Nồi Chống Dính] (Chặn sát thương 1 vòng)!", hp: 0, item: "SHIELD" },
+      { text: "Nhặt được [Bom Xà Phòng] (Trừ 15 HP toàn bộ đối thủ)!", hp: 0, item: "BOMB" },
+      { text: "Sập hầm bát đĩa bẩn ngổn ngang!", hp: -30, item: null }
+    ];
+
+    function showScreen(id) {
+      ['screenHome', 'screenLobby', 'screenGame', 'screenGameOver'].forEach(s => {
+        document.getElementById(s).classList.add('hidden');
+      });
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function setStatus(msg) {
+      document.getElementById('statusMsg').innerText = msg;
+    }
+
+    function generateCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      return code;
+    }
+
+    function createOnlineRoom() {
+      myName = document.getElementById('inputName').value.trim() || 'Chiến Binh 1';
+      currentRoomCode = generateCode();
+      isHost = true;
+      setStatus('Đang khởi tạo phòng trên đám mây...');
+
+      peer = new Peer('DISH_DUNGEON_' + currentRoomCode);
+      peer.on('open', () => {
+        myId = 'HOST';
+        gameState.players[myId] = {
+          id: myId, name: myName, hp: 100, isBot: false, choice: null, item: null, shieldActive: false
+        };
+        setupLobbyUI();
+      });
+
+      peer.on('connection', (conn) => {
+        conn.on('data', (data) => handleHostReceiveData(conn, data));
+        conn.on('close', () => {
+          if (conn.playerId && gameState.players[conn.playerId]) {
+            delete gameState.players[conn.playerId];
+            broadcastState();
+            renderAll();
+          }
+        });
+      });
+
+      peer.on('error', () => {
+        setStatus('Lỗi mạng hoặc trùng mã, vui lòng bấm Tạo Phòng lại!');
+      });
+    }
+
+    function joinOnlineRoom() {
+      myName = document.getElementById('inputName').value.trim() || ('Khách ' + Math.floor(Math.random() * 90 + 10));
+      const code = document.getElementById('inputRoomCode').value.trim().toUpperCase();
+      if (!code) return setStatus('Vui lòng nhập Mã Phòng 5 ký tự!');
+
+      currentRoomCode = code;
+      isHost = false;
+      setStatus('Đang kết nối vào hầm ngục ' + code + '...');
+
+      peer = new Peer();
+      peer.on('open', (id) => {
+        myId = id;
+        hostConn = peer.connect('DISH_DUNGEON_' + code);
+        hostConn.on('open', () => {
+          hostConn.send({ type: 'JOIN', playerId: myId, name: myName });
+          setupLobbyUI();
+        });
+        hostConn.on('data', (data) => {
+          if (data.type === 'STATE_UPDATE') {
+            gameState = data.state;
+            renderAll();
+          }
+        });
+        hostConn.on('error', () => setStatus('Không tìm thấy phòng!'));
+      });
+    }
+
+    function startBotMode() {
+      myName = document.getElementById('inputName').value.trim() || 'Bạn';
+      currentRoomCode = 'BOT99';
+      isHost = true;
+      myId = 'HOST';
+      gameState.players = {
+        HOST: { id: 'HOST', name: myName, hp: 100, isBot: false, choice: null, item: null, shieldActive: false },
+        BOT1: { id: 'BOT1', name: 'Bot Rửa Chén', hp: 100, isBot: true, choice: null, item: null, shieldActive: false },
+        BOT2: { id: 'BOT2', name: 'Bot Tráng Bát', hp: 100, isBot: true, choice: null, item: null, shieldActive: false },
+        BOT3: { id: 'BOT3', name: 'Bot Lau Bàn', hp: 100, isBot: true, choice: null, item: null, shieldActive: false }
+      };
+      hostStartGame();
+    }
+
+    function addBotToLobby() {
+      if (!isHost) return;
+      const botIdx = Object.keys(gameState.players).length;
+      const botId = 'BOT_' + Date.now().toString().slice(-3);
+      const botNames = ['Bot Sợ Mỡ', 'Bot Né Bát', 'Bot Lười Biếng', 'Bot Thích Cọ Xoong'];
+      gameState.players[botId] = {
+        id: botId,
+        name: botNames[botIdx % botNames.length] + ' #' + botIdx,
+        hp: 100,
+        isBot: true,
+        choice: null,
+        item: null,
+        shieldActive: false
+      };
+      broadcastState();
+      renderAll();
+    }
+
+    function handleHostReceiveData(conn, data) {
+      if (data.type === 'JOIN') {
+        conn.playerId = data.playerId;
+        clientConns[data.playerId] = conn;
+        gameState.players[data.playerId] = {
+          id: data.playerId,
+          name: data.name,
+          hp: 100,
+          isBot: false,
+          choice: null,
+          item: null,
+          shieldActive: false
+        };
+        broadcastState();
+        renderAll();
+      } else if (data.type === 'PICK_DOOR') {
+        if (gameState.players[data.playerId]) {
+          gameState.players[data.playerId].choice = data.door;
+          checkAllChosen();
+        }
+      } else if (data.type === 'USE_ITEM') {
+        executeUseItem(data.playerId);
+      }
+    }
+
+    function broadcastState() {
+      if (!isHost) return;
+      Object.values(clientConns).forEach(conn => {
+        if (conn && conn.open) {
+          conn.send({ type: 'STATE_UPDATE', state: gameState });
+        }
+      });
+    }
+
+    function setupLobbyUI() {
+      document.getElementById('roomBadge').classList.remove('hidden');
+      document.getElementById('badgeCode').innerText = currentRoomCode;
+      document.getElementById('lobbyCodeDisplay').innerText = currentRoomCode;
+      if (isHost) {
+        document.getElementById('hostControls').classList.remove('hidden');
+        document.getElementById('guestWaitText').classList.add('hidden');
+      } else {
+        document.getElementById('hostControls').classList.add('hidden');
+        document.getElementById('guestWaitText').classList.remove('hidden');
+      }
+      renderAll();
+    }
+
+    function hostStartGame() {
+      if (!isHost) return;
+      if (Object.keys(gameState.players).length < 2) {
+        addBotToLobby();
+      }
+      gameState.status = 'playing';
+      gameState.round = 1;
+      gameState.startTime = Date.now();
+      gameState.lastLogs = ['Cánh cửa hầm ngục đã mở! Chọn Cửa Gỗ hoặc Cửa Sắt!'];
+      gameState.loser = null;
+      Object.values(gameState.players).forEach(p => {
+        p.hp = 100;
+        p.choice = null;
+        p.item = null;
+        p.shieldActive = false;
+      });
+      broadcastState();
+      renderAll();
+    }
+
+    function hostRestartGame() {
+      if (!isHost) return;
+      hostStartGame();
+    }
+
+    function chooseDoor(doorType) {
+      const btnWood = document.getElementById('btnDoorWood');
+      const btnIron = document.getElementById('btnDoorIron');
+      if (doorType === 'WOOD') {
+        btnWood.classList.add('door-left-anim');
+      } else {
+        btnIron.classList.add('door-right-anim');
+      }
+
+      setTimeout(() => {
+        btnWood.classList.remove('door-left-anim');
+        btnIron.classList.remove('door-right-anim');
+        if (isHost) {
+          gameState.players[myId].choice = doorType;
+          checkAllChosen();
+        } else if (hostConn && hostConn.open) {
+          gameState.players[myId].choice = doorType;
+          renderAll();
+          hostConn.send({ type: 'PICK_DOOR', playerId: myId, door: doorType });
+        }
+      }, 900);
+    }
+
+    function useMyItem() {
+      if (isHost) {
+        executeUseItem(myId);
+      } else if (hostConn && hostConn.open) {
+        hostConn.send({ type: 'USE_ITEM', playerId: myId });
+      }
+    }
+
+    function executeUseItem(pid) {
+      const p = gameState.players[pid];
+      if (!p || !p.item) return;
+
+      if (p.item === 'SPONGE') {
+        p.hp = Math.min(100, p.hp + 20);
+        gameState.lastLogs = [`🧽 ${p.name} dùng Giẻ Thần Kỳ hồi +20 HP!`];
+      } else if (p.item === 'SHIELD') {
+        p.shieldActive = true;
+        gameState.lastLogs = [`🛡️ ${p.name} bật Khiên Nồi Chống Dính chặn sát thương vòng này!`];
+      } else if (p.item === 'BOMB') {
+        Object.values(gameState.players).forEach(other => {
+          if (other.id !== pid) other.hp = Math.max(1, other.hp - 15);
+        });
+        gameState.lastLogs = [`💣 ${p.name} ném Bom Xà Phòng làm cả phòng mất 15 HP!`];
+      }
+      p.item = null;
+      broadcastState();
+      renderAll();
+    }
+
+    function checkAllChosen() {
+      if (!isHost) return;
+      Object.values(gameState.players).forEach(p => {
+        if (p.isBot && !p.choice) {
+          p.choice = Math.random() > 0.5 ? 'WOOD' : 'IRON';
+        }
+      });
+
+      const allPlayers = Object.values(gameState.players);
+      const chosenCount = allPlayers.filter(p => p.choice !== null).length;
+
+      if (chosenCount < allPlayers.length) {
+        broadcastState();
+        renderAll();
+        return;
+      }
+
+      const elapsedMs = Date.now() - gameState.startTime;
+      gameState.suddenDeath = (elapsedMs >= 7 * 60 * 1000) || (gameState.round >= 6);
+
+      const roundLogs = [];
+      allPlayers.forEach(p => {
+        const ev = EVENTS_POOL[Math.floor(Math.random() * EVENTS_POOL.length)];
+        let delta = ev.hp;
+
+        if (gameState.suddenDeath && delta < 0) {
+          delta *= 2;
+        }
+        if (p.shieldActive && delta < 0) {
+          delta = 0;
+          roundLogs.push(`🛡️ ${p.name}: Chặn đứng sát thương nhờ Khiên Chống Dính!`);
+        } else {
+          p.hp = Math.max(0, Math.min(100, p.hp + delta));
+          const sign = delta > 0 ? `+${delta} HP` : (delta < 0 ? `${delta} HP` : `0 HP`);
+          roundLogs.push(`• ${p.name} (${p.choice === 'WOOD' ? 'Cửa Gỗ' : 'Cửa Sắt'}): ${ev.text} [${sign}]`);
+        }
+
+        if (ev.item && !p.item) {
+          p.item = ev.item;
+        }
+        p.shieldActive = false;
+        p.choice = null;
+      });
+
+      gameState.lastLogs = roundLogs;
+      gameState.round += 1;
+
+      const deadPlayers = allPlayers.filter(p => p.hp <= 0);
+      const timeUp = elapsedMs >= 10 * 60 * 1000;
+
+      if (deadPlayers.length > 0 || timeUp) {
+        const sorted = [...allPlayers].sort((a, b) => a.hp - b.hp);
+        gameState.loser = sorted[0];
+        gameState.status = 'gameover';
+      }
+
+      broadcastState();
+      renderAll();
+    }
+
+    function renderAll() {
+      if (gameState.status === 'lobby') {
+        showScreen('screenLobby');
+        const listEl = document.getElementById('lobbyPlayerList');
+        const playersArr = Object.values(gameState.players);
+        document.getElementById('playerCount').innerText = playersArr.length + ' người';
+        listEl.innerHTML = playersArr.map((p, idx) => `
+          <li class="bg-slate-800 border border-slate-700 px-3.5 py-2.5 rounded-xl flex justify-between items-center">
+            <span class="font-bold text-sm text-white">${idx === 0 ? '👑 ' : '⚔️ '}${p.name}</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-700 text-amber-300">${p.isBot ? 'AI BOT' : 'SẴN SÀNG'}</span>
+          </li>
+        `).join('');
+      } else if (gameState.status === 'playing') {
+        showScreen('screenGame');
+        startTimerLoop();
+
+        document.getElementById('roundText').innerText = 'VÒNG ' + gameState.round;
+        const sdBadge = document.getElementById('suddenDeathBadge');
+        if (gameState.suddenDeath) sdBadge.classList.remove('hidden');
+        else sdBadge.classList.add('hidden');
+
+        const gridEl = document.getElementById('playersStatusGrid');
+        const playersArr = Object.values(gameState.players);
+        gridEl.innerHTML = playersArr.map(p => {
+          const hpPercent = Math.max(0, p.hp);
+          const barColor = hpPercent > 50 ? 'bg-emerald-500' : (hpPercent > 25 ? 'bg-amber-500' : 'bg-red-600');
+          const isMe = p.id === myId;
+          return `
+            <div class="bg-slate-900 border ${isMe ? 'border-amber-400' : 'border-slate-800'} p-2.5 rounded-xl">
+              <div class="flex justify-between items-center text-xs font-bold mb-1">
+                <span class="truncate ${isMe ? 'text-amber-300' : 'text-white'}">${p.name} ${isMe ? '(Bạn)' : ''}</span>
+                <span class="text-rose-400 font-black">${p.hp} HP</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                <div class="${barColor} h-full transition-all duration-500" style="width: ${hpPercent}%"></div>
+              </div>
+              <div class="mt-1 flex justify-between text-[10px] text-slate-400 font-semibold">
+                <span>${p.choice ? '✅ Đã chọn cửa' : '⏳ Đang suy nghĩ...'}</span>
+                <span>${p.shieldActive ? '🛡️ Có khiên' : ''}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        const logContent = document.getElementById('eventLogContent');
+        logContent.innerHTML = (gameState.lastLogs || []).map(l => `<p>${l}</p>`).join('');
+
+        const me = gameState.players[myId];
+        const itemNames = {
+          SPONGE: '🧽 Giẻ Thần Kỳ (+20 HP)',
+          SHIELD: '🛡️ Khiên Nồi Chống Dính',
+          BOMB: '💣 Bom Xà Phòng (-15 HP địch)'
+        };
+        const itemTextEl = document.getElementById('myItemText');
+        const btnUse = document.getElementById('btnUseItem');
+        if (me && me.item) {
+          itemTextEl.innerText = itemNames[me.item] || me.item;
+          btnUse.classList.remove('hidden');
+        } else {
+          itemTextEl.innerText = 'Trống';
+          btnUse.classList.add('hidden');
+        }
+
+        const doorsContainer = document.getElementById('doorsContainer');
+        const waitingOverlay = document.getElementById('waitingOverlay');
+        if (me && me.choice) {
+          doorsContainer.classList.add('hidden');
+          waitingOverlay.classList.remove('hidden');
+          const doneCount = playersArr.filter(p => p.choice !== null).length;
+          document.getElementById('waitingCountText').innerText = `Đã chọn: ${doneCount}/${playersArr.length} người chơi`;
+        } else {
+          doorsContainer.classList.remove('hidden');
+          waitingOverlay.classList.add('hidden');
+        }
+
+      } else if (gameState.status === 'gameover') {
+        showScreen('screenGameOver');
+        const isMeLoser = gameState.loser && gameState.loser.id === myId;
+        const card = document.getElementById('gameOverCard');
+        const headline = document.getElementById('gameOverHeadline');
+        const subtext = document.getElementById('gameOverSubtext');
+
+        if (isMeLoser) {
+          card.className = 'rounded-2xl p-6 text-center border-4 shadow-2xl space-y-4 bg-red-900 border-red-500 text-white';
+          headline.innerText = 'CHÚC MỪNG! BẠN ĐÃ TRÚNG THẦU RỬA BÁT!';
+          subtext.innerText = 'Hãy tự giác đứng dậy đeo găng tay và ra bồn rửa bát ngay lập tức! 🧽🍽️';
+        } else {
+          card.className = 'rounded-2xl p-6 text-center border-4 shadow-2xl space-y-4 bg-emerald-900 border-emerald-500 text-white';
+          headline.innerText = `${gameState.loser ? gameState.loser.name : 'AI ĐÓ'} PHẢI ĐI RỬA BÁT!`;
+          subtext.innerText = 'Bạn đã sống sót an toàn qua hầm ngục hôm nay! Ngồi xuống ăn tráng miệng thôi!';
+          if (window.confetti) confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+        }
+
+        const sorted = Object.values(gameState.players).sort((a, b) => a.hp - b.hp);
+        document.getElementById('finalScoreList').innerHTML = sorted.map((p, idx) => `
+          <div class="flex justify-between items-center py-1 border-b border-white/10">
+            <span class="font-bold">${idx === 0 ? '🧽 (Rửa bát) ' : '🎉 '}${p.name}</span>
+            <span class="font-black">${p.hp} HP</span>
+          </div>
+        `).join('');
+
+        if (isHost) document.getElementById('btnReplayHost').classList.remove('hidden');
+      }
+    }
+
+    function startTimerLoop() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (!gameState.startTime || gameState.status !== 'playing') return;
+        const sec = Math.floor((Date.now() - gameState.startTime) / 1000);
+        const m = String(Math.floor(sec / 60)).padStart(2, '0');
+        const s = String(sec % 60).padStart(2, '0');
+        document.getElementById('timerText').innerText = `${m}:${s}`;
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
